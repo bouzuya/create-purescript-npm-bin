@@ -10,6 +10,10 @@
   "bugs": {
     "url": "https://github.com/bouzuya/create-purescript-npm-bin/issues"
   },
+  "devDependencies": {
+    "purescript": "^0.12.2",
+    "spago": "^0.6.4"
+  },
   "homepage": "https://github.com/bouzuya/create-purescript-npm-bin#readme",
   "keywords": [],
   "license": "MIT",
@@ -19,6 +23,10 @@
     "url": "git+https://github.com/bouzuya/create-purescript-npm-bin.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "spago build",
+    "prepare": "spago build",
+    "repl": "spago repl",
+    "spago": "spago",
+    "test": "spago test"
   }
 }
