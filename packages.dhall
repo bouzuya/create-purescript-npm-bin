@@ -116,6 +116,38 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions = {=} //
+  { node-os =
+      mkPackage
+        [ "prelude"
+        , "datetime"
+        , "foreign-object"
+        , "node-buffer"
+        ]
+        "https://github.com/Thimoteus/purescript-node-os.git"
+        "v3.1.0"
+  , snail =
+      mkPackage
+        [ "aff"
+        , "node-process"
+        , "node-fs-aff"
+        , "node-child-process"
+        , "node-os"
+        , "yarn"
+        , "nonempty"
+        ]
+        "https://github.com/Thimoteus/purescript-snail.git"
+        "v5.0.0"
+  , yarn =
+      mkPackage
+        [ "strings"
+        , "arrays"
+        , "generics-rep"
+        , "partial"
+        , "unicode"
+        ]
+        "https://github.com/Thimoteus/purescript-yarn.git"
+        "v4.0.0"
+  }
 
 in  upstream ⫽ overrides ⫽ additions
