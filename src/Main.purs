@@ -128,26 +128,26 @@ exec file args =
 getFiles :: Dirs -> Files
 getFiles dirs =
   { gitIgnore:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy ".gitignore")
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
   , gitIgnoreTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "_gitignore")
-  , license: dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "LICENSE")
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
+  , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
   , licenseTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "LICENSE")
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
   , packageJson:
-      dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "package.json")
-  , readme: dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "README.md")
+      dirs.current Pathy.</> Pathy.file (SProxy :: _ "package.json")
+  , readme: dirs.current Pathy.</> Pathy.file (SProxy :: _ "README.md")
   , travisYml:
-      dirs.current Pathy.</> Pathy.file (SProxy :: SProxy ".travis.yml")
+      dirs.current Pathy.</> Pathy.file (SProxy :: _ ".travis.yml")
   , travisYmlTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "_travis.yml")
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_travis.yml")
   }
 
 getDirs :: Effect Dirs
 getDirs = do
   current <- Process.currentWorkingDir
   script <- pure Process.scriptDir
-  templates <- pure (script Pathy.</> Pathy.dir (SProxy :: SProxy "templates"))
+  templates <- pure (script Pathy.</> Pathy.dir (SProxy :: _ "templates"))
   pure { current, script, templates }
 
 initPackageJson :: Files -> Aff Unit
