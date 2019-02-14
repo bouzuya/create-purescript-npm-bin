@@ -52,6 +52,8 @@ files ::
   , license :: Snail.File
   , licenseTemplate :: Snail.File
   , readme :: Snail.File
+  , travisYml :: Snail.File
+  , travisYmlTemplate :: Snail.File
   }
 files =
   { gitIgnore: dirs.templates </> Snail.file ".gitignore"
@@ -59,6 +61,8 @@ files =
   , license: dirs.current </> Snail.file "LICENSE"
   , licenseTemplate: dirs.templates </> Snail.file "LICENSE"
   , readme: dirs.current </> Snail.file "README.md"
+  , travisYml: dirs.current </> Snail.file ".travis.yml"
+  , travisYmlTemplate: dirs.templates </> Snail.file "_travis.yml"
   }
 
 addAuthorToReadme :: Aff Unit
@@ -84,6 +88,22 @@ addGitIgnore = do
   _ <- Snail.echo "add .gitignore"
   Snail.cp files.gitIgnoreTemplate dirs.current Nothing
 
+addHowToBuildToReadme :: Aff Unit
+addHowToBuildToReadme = do
+  _ <- Snail.echo "add 'How to Build' to README.md"
+  let
+    text =
+      Foldable.intercalate
+        "\n"
+        [ "## How to build"
+        , ""
+        , "```bash"
+        , "npm install"
+        , "```"
+        , ""
+        ]
+  Snail.appendFile text files.readme
+
 addLicense :: Aff Unit
 addLicense = do
   _ <- Snail.echo "add LICENSE"
@@ -103,21 +123,10 @@ addLicenseToReadme = do
         ]
   Snail.appendFile text files.readme
 
-addHowToBuildToReadme :: Aff Unit
-addHowToBuildToReadme = do
-  _ <- Snail.echo "add 'How to Build' to README.md"
-  let
-    text =
-      Foldable.intercalate
-        "\n"
-        [ "## How to build"
-        , ""
-        , "```bash"
-        , "npm install"
-        , "```"
-        , ""
-        ]
-  Snail.appendFile text files.readme
+addTravisYml :: Aff Unit
+addTravisYml = do
+  _ <- Snail.echo "add .travis.yml"
+  Snail.cp files.travisYmlTemplate dirs.current Nothing
 
 initPackageJson :: Aff Unit
 initPackageJson = do
@@ -185,3 +194,4 @@ main = Aff.launchAff_ do
   initPackageJson
   initSpagoDhall
   addGitIgnore
+  addTravisYml
