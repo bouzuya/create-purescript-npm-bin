@@ -6,7 +6,7 @@ import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (hush)
 import Data.Foldable as Foldable
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as RegexFlags
 import Data.Symbol (SProxy(..))
@@ -25,18 +25,19 @@ import Process as Process
 import Simple.JSON as SimpleJSON
 
 type PackageJson =
-  { name :: String
-  , description :: String
-  , version :: String
-  , author :: Maybe Foreign
+  { author :: Maybe Foreign
+  , bin :: Maybe String
   , bugs :: { url :: String }
+  , description :: String
   , devDependencies :: Foreign
   , homepage :: String
   , keywords :: Array String
   , license :: String
   , main :: String
+  , name :: String
   , repository :: { type :: String, url :: String }
   , scripts :: Foreign
+  , version :: String
   }
 
 type Files =
@@ -169,12 +170,12 @@ initPackageJson files = do
     jsonText =
       SimpleJSON.writeJSON
         (packageJsonRecord
-          {
-            author = do
+          { author = do
               authorForeign <- packageJsonRecord.author
               authorString <- SimpleJSON.read_ authorForeign :: Maybe String
               authorRecord <- toAuthorRecord authorString
               pure (SimpleJSON.write authorRecord)
+          , bin = Just packageJsonRecord.name
           , scripts =
               SimpleJSON.write
               { build: "spago build"
