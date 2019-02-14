@@ -42,8 +42,9 @@ type PackageJson =
 
 dirs :: { current :: Snail.Folder, templates :: Snail.Folder }
 dirs =
-  { current: Snail.folder "."
-  , templates: Snail.folder (Path.concat [__dirname, "templates"])
+  -- `*/` is workaround for snail pathpend (</>) bug
+  { current: Snail.folder "./"
+  , templates: Snail.folder (Path.concat [__dirname, "templates/"])
   }
 
 files ::
