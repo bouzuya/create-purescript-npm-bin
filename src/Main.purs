@@ -44,8 +44,8 @@ templateDir :: Snail.Folder
 templateDir =
   Snail.folder (Path.concat [__dirname, "templates"])
 
-addAuthor :: Aff Unit
-addAuthor = do
+addAuthorToReadme :: Aff Unit
+addAuthorToReadme = do
   _ <- Snail.echo "add 'Author' to README.md"
   let
     readme = Snail.file "README.md"
@@ -166,6 +166,6 @@ main = Aff.launchAff_ do
   addHowToBuildToReadme
   addLicense
   addLicenseToReadme
-  addAuthor
+  addAuthorToReadme
   initPackageJson
   initSpagoDhall
