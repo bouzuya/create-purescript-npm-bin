@@ -1,7 +1,7 @@
 {
   "name": "@bouzuya/create-purescript-npm-bin",
   "description": "An npm initializer for creating packages for npx with PureScript.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": {
     "email": "m@bouzuya.net",
     "name": "bouzuya",
