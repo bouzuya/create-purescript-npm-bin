@@ -63,7 +63,8 @@ addAuthorToReadme files = do
     text =
       Foldable.intercalate
         "\n"
-        [ "## Author"
+        [ ""
+        , "## Author"
         , ""
         , "[bouzuya][user] &lt;[m@bouzuya.net][email]&gt; ([https://bouzuya.net/][url])"
         , ""
@@ -86,7 +87,8 @@ addHowToBuildToReadme files = do
     text =
       Foldable.intercalate
         "\n"
-        [ "## How to build"
+        [ ""
+        , "## How to build"
         , ""
         , "```bash"
         , "npm install"
@@ -107,7 +109,8 @@ addLicenseToReadme files = do
     text =
       Foldable.intercalate
         "\n"
-        [ "## License"
+        [ ""
+        , "## License"
         , ""
         , "[MIT](LICENSE)"
         , ""
