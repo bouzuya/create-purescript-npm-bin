@@ -15,7 +15,8 @@ import Prelude (bind, pure, (<>))
 currentWorkingDir :: Effect Pathy.AbsDir
 currentWorkingDir = do
   cwd <- Process.cwd
-  maybe (throw "invalid cwd") pure (Pathy.parseAbsDir Pathy.posixParser cwd)
+  let dirMaybe = Pathy.parseAbsDir Pathy.posixParser (cwd <> "/")
+  maybe (throw "invalid cwd") pure dirMaybe
 
 scriptDir :: Pathy.AbsDir
 scriptDir =
