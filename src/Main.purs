@@ -20,7 +20,7 @@ import Node.Encoding as Encoding
 import Node.FS.Aff as Fs
 import Node.Globals (__dirname)
 import Node.Path as Path
-import Prelude (Unit, bind, discard, join, map, pure)
+import Prelude (Unit, bind, discard, join, map, pure, unit)
 import Simple.JSON as SimpleJSON
 import Snail ((</>))
 import Snail as Snail
@@ -142,6 +142,15 @@ initPackageJson = do
           })
   Fs.writeTextFile Encoding.UTF8 "package.json" jsonText
 
+initSpagoDhall :: Aff Unit
+initSpagoDhall = do
+  _ <- Snail.echo "initialize spago.dhall"
+  _ <- Snail.exec ("npm" :| ["run", "spago", "--", "init"])
+  _ <-
+    Snail.exec
+      ("npm" :| ["run", "spago", "--", "install", "psci-support", "test-unit"])
+  pure unit
+
 toAuthorRecord :: String -> Maybe { email :: String, name :: String, url :: String }
 toAuthorRecord s = do
   regex <-
@@ -159,3 +168,4 @@ main = Aff.launchAff_ do
   addLicenseToReadme
   addAuthor
   initPackageJson
+  initSpagoDhall
