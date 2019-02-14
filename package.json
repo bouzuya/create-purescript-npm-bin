@@ -17,7 +17,8 @@
     "spago": "^0.6.4"
   },
   "files": [
-    "bin"
+    "bin",
+    "templates"
   ],
   "homepage": "https://github.com/bouzuya/create-purescript-npm-bin#readme",
   "keywords": [],
