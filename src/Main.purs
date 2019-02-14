@@ -40,15 +40,31 @@ type PackageJson =
   , scripts :: Foreign
   }
 
-templateDir :: Snail.Folder
-templateDir =
-  Snail.folder (Path.concat [__dirname, "templates"])
+dirs :: { current :: Snail.Folder, templates :: Snail.Folder }
+dirs =
+  { current: Snail.folder "."
+  , templates: Snail.folder (Path.concat [__dirname, "templates"])
+  }
+
+files ::
+  { gitIgnore :: Snail.File
+  , gitIgnoreTemplate :: Snail.File
+  , license :: Snail.File
+  , licenseTemplate :: Snail.File
+  , readme :: Snail.File
+  }
+files =
+  { gitIgnore: dirs.templates </> Snail.file ".gitignore"
+  , gitIgnoreTemplate: dirs.templates </> Snail.file "_gitignore"
+  , license: dirs.current </> Snail.file "LICENSE"
+  , licenseTemplate: dirs.templates </> Snail.file "LICENSE"
+  , readme: dirs.current </> Snail.file "README.md"
+  }
 
 addAuthorToReadme :: Aff Unit
 addAuthorToReadme = do
   _ <- Snail.echo "add 'Author' to README.md"
   let
-    readme = Snail.file "README.md"
     text =
       Foldable.intercalate
         "\n"
@@ -61,22 +77,22 @@ addAuthorToReadme = do
         , "[url]: https://bouzuya.net/"
         , ""
         ]
-  Snail.appendFile text readme
+  Snail.appendFile text files.readme
+
+addGitIgnore :: Aff Unit
+addGitIgnore = do
+  _ <- Snail.echo "add .gitignore"
+  Snail.cp files.gitIgnoreTemplate dirs.current Nothing
 
 addLicense :: Aff Unit
 addLicense = do
   _ <- Snail.echo "add LICENSE"
-  let
-    license = Snail.file "LICENSE"
-    src = templateDir </> license
-    dst = Snail.folder "."
-  Snail.cp src dst Nothing
+  Snail.cp files.licenseTemplate dirs.current Nothing
 
 addLicenseToReadme :: Aff Unit
 addLicenseToReadme = do
   _ <- Snail.echo "add 'License' to README.md"
   let
-    readme = Snail.file "README.md"
     text =
       Foldable.intercalate
         "\n"
@@ -85,13 +101,12 @@ addLicenseToReadme = do
         , "[MIT](LICENSE)"
         , ""
         ]
-  Snail.appendFile text readme
+  Snail.appendFile text files.readme
 
 addHowToBuildToReadme :: Aff Unit
 addHowToBuildToReadme = do
   _ <- Snail.echo "add 'How to Build' to README.md"
   let
-    readme = Snail.file "README.md"
     text =
       Foldable.intercalate
         "\n"
@@ -102,7 +117,7 @@ addHowToBuildToReadme = do
         , "```"
         , ""
         ]
-  Snail.appendFile text readme
+  Snail.appendFile text files.readme
 
 initPackageJson :: Aff Unit
 initPackageJson = do
@@ -169,3 +184,4 @@ main = Aff.launchAff_ do
   addAuthorToReadme
   initPackageJson
   initSpagoDhall
+  addGitIgnore
