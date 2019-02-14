@@ -6,24 +6,23 @@ import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (hush)
 import Data.Foldable as Foldable
-import Data.Maybe (Maybe(..), maybe)
-import Data.NonEmpty ((:|))
+import Data.Maybe (Maybe, maybe)
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as RegexFlags
+import Data.Symbol (SProxy(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
+import Effect.Class.Console as Console
 import Effect.Exception (throw)
+import FS as FS
 import Foreign (Foreign)
-import Node.Encoding as Encoding
-import Node.FS.Aff as Fs
-import Node.Globals (__dirname)
-import Node.Path as Path
-import Prelude (Unit, bind, discard, join, map, pure, unit)
+import Node.ChildProcess as ChildProcess
+import Pathy as Pathy
+import Prelude (Unit, bind, discard, join, map, pure, unit, void)
+import Process as Process
 import Simple.JSON as SimpleJSON
-import Snail ((</>))
-import Snail as Snail
 
 type PackageJson =
   { name :: String
@@ -40,35 +39,26 @@ type PackageJson =
   , scripts :: Foreign
   }
 
-dirs :: { current :: Snail.Folder, templates :: Snail.Folder }
-dirs =
-  -- `*/` is workaround for snail pathpend (</>) bug
-  { current: Snail.folder "./"
-  , templates: Snail.folder (Path.concat [__dirname, "templates/"])
+type Files =
+  { gitIgnore :: Pathy.AbsFile
+  , gitIgnoreTemplate :: Pathy.AbsFile
+  , license :: Pathy.AbsFile
+  , licenseTemplate :: Pathy.AbsFile
+  , packageJson :: Pathy.AbsFile
+  , readme :: Pathy.AbsFile
+  , travisYml :: Pathy.AbsFile
+  , travisYmlTemplate :: Pathy.AbsFile
   }
 
-files ::
-  { gitIgnore :: Snail.File
-  , gitIgnoreTemplate :: Snail.File
-  , license :: Snail.File
-  , licenseTemplate :: Snail.File
-  , readme :: Snail.File
-  , travisYml :: Snail.File
-  , travisYmlTemplate :: Snail.File
-  }
-files =
-  { gitIgnore: dirs.templates </> Snail.file ".gitignore"
-  , gitIgnoreTemplate: dirs.templates </> Snail.file "_gitignore"
-  , license: dirs.current </> Snail.file "LICENSE"
-  , licenseTemplate: dirs.templates </> Snail.file "LICENSE"
-  , readme: dirs.current </> Snail.file "README.md"
-  , travisYml: dirs.current </> Snail.file ".travis.yml"
-  , travisYmlTemplate: dirs.templates </> Snail.file "_travis.yml"
+type Dirs =
+  { current :: Pathy.AbsDir
+  , script :: Pathy.AbsDir
+  , templates :: Pathy.AbsDir
   }
 
-addAuthorToReadme :: Aff Unit
-addAuthorToReadme = do
-  _ <- Snail.echo "add 'Author' to README.md"
+addAuthorToReadme :: Files -> Aff Unit
+addAuthorToReadme files = do
+  Console.log "add 'Author' to README.md"
   let
     text =
       Foldable.intercalate
@@ -82,16 +72,16 @@ addAuthorToReadme = do
         , "[url]: https://bouzuya.net/"
         , ""
         ]
-  Snail.appendFile text files.readme
+  FS.appendTextFile text files.readme
 
-addGitIgnore :: Aff Unit
-addGitIgnore = do
-  _ <- Snail.echo "add .gitignore"
-  Snail.cp files.gitIgnoreTemplate dirs.current Nothing
+addGitIgnore :: Files -> Aff Unit
+addGitIgnore files = do
+  Console.log "add .gitignore"
+  FS.copyTextFile files.gitIgnoreTemplate files.gitIgnore
 
-addHowToBuildToReadme :: Aff Unit
-addHowToBuildToReadme = do
-  _ <- Snail.echo "add 'How to Build' to README.md"
+addHowToBuildToReadme :: Files -> Aff Unit
+addHowToBuildToReadme files = do
+  Console.log "add 'How to Build' to README.md"
   let
     text =
       Foldable.intercalate
@@ -103,16 +93,16 @@ addHowToBuildToReadme = do
         , "```"
         , ""
         ]
-  Snail.appendFile text files.readme
+  FS.appendTextFile text files.readme
 
-addLicense :: Aff Unit
-addLicense = do
-  _ <- Snail.echo "add LICENSE"
-  Snail.cp files.licenseTemplate dirs.current Nothing
+addLicense :: Files -> Aff Unit
+addLicense files = do
+  Console.log "add LICENSE"
+  FS.copyTextFile files.licenseTemplate files.license
 
-addLicenseToReadme :: Aff Unit
-addLicenseToReadme = do
-  _ <- Snail.echo "add 'License' to README.md"
+addLicenseToReadme :: Files -> Aff Unit
+addLicenseToReadme files = do
+  Console.log "add 'License' to README.md"
   let
     text =
       Foldable.intercalate
@@ -122,21 +112,50 @@ addLicenseToReadme = do
         , "[MIT](LICENSE)"
         , ""
         ]
-  Snail.appendFile text files.readme
+  FS.appendTextFile text files.readme
 
-addTravisYml :: Aff Unit
-addTravisYml = do
-  _ <- Snail.echo "add .travis.yml"
-  Snail.cp files.travisYmlTemplate dirs.current Nothing
+addTravisYml :: Files -> Aff Unit
+addTravisYml files = do
+  Console.log "add .travis.yml"
+  FS.copyTextFile files.travisYmlTemplate files.travisYml
 
-initPackageJson :: Aff Unit
-initPackageJson = do
-  _ <- Snail.echo "initialize package.json"
-  _ <- Snail.exec ("npm" :| ["init", "--yes"])
-  _ <-
-    Snail.exec
-      ("npm" :| ["install", "--save-dev", "npm-run-all", "purescript", "spago"])
-  packageJsonText <- Fs.readTextFile Encoding.UTF8 "package.json"
+exec :: String -> Array String -> Aff Unit
+exec file args =
+  void
+    (liftEffect
+      (ChildProcess.execFileSync file args ChildProcess.defaultExecSyncOptions))
+
+getFiles :: Dirs -> Files
+getFiles dirs =
+  { gitIgnore:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy ".gitignore")
+  , gitIgnoreTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "_gitignore")
+  , license: dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "LICENSE")
+  , licenseTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "LICENSE")
+  , packageJson:
+      dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "package.json")
+  , readme: dirs.current Pathy.</> Pathy.file (SProxy :: SProxy "README.md")
+  , travisYml:
+      dirs.current Pathy.</> Pathy.file (SProxy :: SProxy ".travis.yml")
+  , travisYmlTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: SProxy "_travis.yml")
+  }
+
+getDirs :: Effect Dirs
+getDirs = do
+  current <- Process.currentWorkingDir
+  script <- pure Process.scriptDir
+  templates <- pure (script Pathy.</> Pathy.dir (SProxy :: SProxy "templates"))
+  pure { current, script, templates }
+
+initPackageJson :: Files -> Aff Unit
+initPackageJson files = do
+  Console.log "initialize package.json"
+  exec "npm" ["init", "--yes"]
+  exec "npm" ["install", "--save-dev", "npm-run-all", "purescript", "spago"]
+  packageJsonText <- FS.readTextFile files.packageJson
   packageJsonRecord <-
     liftEffect
       (maybe
@@ -165,15 +184,13 @@ initPackageJson = do
               , test: "spago test"
               }
           })
-  Fs.writeTextFile Encoding.UTF8 "package.json" jsonText
+  FS.writeTextFile files.packageJson jsonText
 
 initSpagoDhall :: Aff Unit
 initSpagoDhall = do
-  _ <- Snail.echo "initialize spago.dhall"
-  _ <- Snail.exec ("npm" :| ["run", "spago", "--", "init"])
-  _ <-
-    Snail.exec
-      ("npm" :| ["run", "spago", "--", "install", "psci-support", "test-unit"])
+  Console.log "initialize spago.dhall"
+  exec "npm" ["run", "spago", "--", "init"]
+  exec "npm" ["run", "spago", "--", "install", "psci-support", "test-unit"]
   pure unit
 
 toAuthorRecord :: String -> Maybe { email :: String, name :: String, url :: String }
@@ -188,11 +205,13 @@ toAuthorRecord s = do
 
 main :: Effect Unit
 main = Aff.launchAff_ do
-  addHowToBuildToReadme
-  addLicense
-  addLicenseToReadme
-  addAuthorToReadme
-  initPackageJson
+  dirs <- liftEffect getDirs
+  files <- pure (getFiles dirs)
+  addHowToBuildToReadme files
+  addLicense files
+  addLicenseToReadme files
+  addAuthorToReadme files
+  initPackageJson files
   initSpagoDhall
-  addGitIgnore
-  addTravisYml
+  addGitIgnore files
+  addTravisYml files

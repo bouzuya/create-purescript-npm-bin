@@ -5,7 +5,17 @@ You can edit this file as you like.
 { name =
     "my-project"
 , dependencies =
-    [ "arrays", "console", "effect", "simple-json", "snail" ]
+    [ "aff"
+    , "arrays"
+    , "console"
+    , "effect"
+    , "node-child-process"
+    , "node-fs-aff"
+    , "node-process"
+    , "pathy"
+    , "psci-support"
+    , "simple-json"
+    ]
 , packages =
     ./packages.dhall
 }

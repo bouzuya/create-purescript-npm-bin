@@ -117,37 +117,20 @@ let upstream =
 let overrides = {=}
 
 let additions = {=} //
-  { node-os =
+  { pathy =
       mkPackage
-        [ "prelude"
-        , "datetime"
-        , "foreign-object"
-        , "node-buffer"
-        ]
-        "https://github.com/Thimoteus/purescript-node-os.git"
-        "v3.1.0"
-  , snail =
-      mkPackage
-        [ "aff"
-        , "node-process"
-        , "node-fs-aff"
-        , "node-child-process"
-        , "node-os"
-        , "yarn"
-        , "nonempty"
-        ]
-        "https://github.com/Thimoteus/purescript-snail.git"
-        "v5.0.0"
-  , yarn =
-      mkPackage
-        [ "strings"
-        , "arrays"
-        , "generics-rep"
+        [ "console"
+        , "exceptions"
+        , "lists"
         , "partial"
-        , "unicode"
+        , "profunctor"
+        , "strings"
+        , "transformers"
+        , "typelevel-prelude"
+        , "unsafe-coerce"
         ]
-        "https://github.com/Thimoteus/purescript-yarn.git"
-        "v4.0.0"
+        "https://github.com/slamdata/purescript-pathy.git"
+        "v6.0.0"
   }
 
 in  upstream ⫽ overrides ⫽ additions
