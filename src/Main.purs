@@ -6,10 +6,12 @@ import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (hush)
 import Data.Foldable as Foldable
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.String.NonEmpty as NonEmptyString
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as RegexFlags
 import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff as Aff
@@ -20,7 +22,7 @@ import FS as FS
 import Foreign (Foreign)
 import Node.ChildProcess as ChildProcess
 import Pathy as Pathy
-import Prelude (Unit, bind, discard, join, map, pure, unit, void)
+import Prelude (Unit, bind, discard, join, map, pure, unit, void, (+))
 import Process as Process
 import Simple.JSON as SimpleJSON
 
@@ -41,7 +43,8 @@ type PackageJson =
   }
 
 type Files =
-  { gitIgnore :: Pathy.AbsFile
+  { bin :: Pathy.AbsFile
+  , gitIgnore :: Pathy.AbsFile
   , gitIgnoreTemplate :: Pathy.AbsFile
   , license :: Pathy.AbsFile
   , licenseTemplate :: Pathy.AbsFile
@@ -52,7 +55,8 @@ type Files =
   }
 
 type Dirs =
-  { current :: Pathy.AbsDir
+  { bin :: Pathy.AbsDir
+  , current :: Pathy.AbsDir
   , script :: Pathy.AbsDir
   , templates :: Pathy.AbsDir
   }
@@ -75,6 +79,26 @@ addAuthorToReadme files = do
         , ""
         ]
   FS.appendTextFile text files.readme
+
+addBin :: Dirs -> Files -> Aff Unit
+addBin dirs files = do
+  Console.log "add bin/..."
+  let
+    text =
+      Foldable.intercalate
+        "\n"
+        [ "#!/usr/bin/env node"
+        , "require('../').main()"
+        ]
+  FS.mkdir dirs.bin
+  FS.writeTextFile files.bin text
+  -- 0755
+  FS.chmod
+    files.bin
+    (FS.mkPerms
+      FS.all
+      (FS.read + FS.execute)
+      (FS.read + FS.execute))
 
 addGitIgnore :: Files -> Aff Unit
 addGitIgnore files = do
@@ -131,28 +155,34 @@ exec file args =
 
 getFiles :: Dirs -> Files
 getFiles dirs =
-  { gitIgnore:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
-  , gitIgnoreTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
-  , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
-  , licenseTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
-  , packageJson:
-      dirs.current Pathy.</> Pathy.file (SProxy :: _ "package.json")
-  , readme: dirs.current Pathy.</> Pathy.file (SProxy :: _ "README.md")
-  , travisYml:
-      dirs.current Pathy.</> Pathy.file (SProxy :: _ ".travis.yml")
-  , travisYmlTemplate:
-      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_travis.yml")
-  }
+  let
+    dirToFile :: Pathy.AbsDir -> Pathy.RelFile
+    dirToFile dir = fromMaybe (Pathy.file (SProxy :: _ "dummy")) do
+      Tuple _ (Pathy.Name parent) <- Pathy.peel dir
+      Pathy.parseRelFile Pathy.posixParser (NonEmptyString.toString parent)
+  in
+    { bin: dirs.bin Pathy.</> dirToFile dirs.current
+    , gitIgnore: dirs.templates Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
+    , gitIgnoreTemplate:
+        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
+    , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
+    , licenseTemplate:
+        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
+    , packageJson:
+        dirs.current Pathy.</> Pathy.file (SProxy :: _ "package.json")
+    , readme: dirs.current Pathy.</> Pathy.file (SProxy :: _ "README.md")
+    , travisYml: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".travis.yml")
+    , travisYmlTemplate:
+        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_travis.yml")
+    }
 
 getDirs :: Effect Dirs
 getDirs = do
   current <- Process.currentWorkingDir
+  bin <- pure (current Pathy.</> Pathy.dir (SProxy :: _ "bin"))
   script <- pure Process.scriptDir
   templates <- pure (script Pathy.</> Pathy.dir (SProxy :: _ "templates"))
-  pure { current, script, templates }
+  pure { bin, current, script, templates }
 
 initPackageJson :: Files -> Aff Unit
 initPackageJson files = do
@@ -215,6 +245,7 @@ main = Aff.launchAff_ do
   addLicense files
   addLicenseToReadme files
   addAuthorToReadme files
+  addBin dirs files
   initPackageJson files
   initSpagoDhall
   addGitIgnore files
