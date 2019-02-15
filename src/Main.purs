@@ -32,6 +32,7 @@ type PackageJson =
   , bugs :: { url :: String }
   , description :: String
   , devDependencies :: Foreign
+  , files :: Maybe (Array String)
   , homepage :: String
   , keywords :: Array String
   , license :: String
@@ -206,6 +207,7 @@ initPackageJson files = do
               authorRecord <- toAuthorRecord authorString
               pure (SimpleJSON.write authorRecord)
           , bin = Just packageJsonRecord.name
+          , files = Just ["bin"]
           , scripts =
               SimpleJSON.write
               { build: "spago build"
