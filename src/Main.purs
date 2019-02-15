@@ -162,7 +162,7 @@ getFiles dirs =
       Pathy.parseRelFile Pathy.posixParser (NonEmptyString.toString parent)
   in
     { bin: dirs.bin Pathy.</> dirToFile dirs.current
-    , gitIgnore: dirs.templates Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
+    , gitIgnore: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
     , gitIgnoreTemplate:
         dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
     , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
