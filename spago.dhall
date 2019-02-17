@@ -15,6 +15,7 @@ You can edit this file as you like.
     , "pathy"
     , "psci-support"
     , "simple-json"
+    , "test-unit"
     ]
 , packages =
     ./packages.dhall
