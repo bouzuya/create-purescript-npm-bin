@@ -2,14 +2,9 @@ module Main
   ( main
   ) where
 
-import Data.Array as Array
-import Data.Array.NonEmpty as NonEmptyArray
-import Data.Either (hush)
 import Data.Foldable as Foldable
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.NonEmpty as NonEmptyString
-import Data.String.Regex as Regex
-import Data.String.Regex.Flags as RegexFlags
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -21,13 +16,14 @@ import Effect.Exception (throw)
 import FS as FS
 import Foreign (Foreign)
 import Node.ChildProcess as ChildProcess
+import PackageJsonPerson (PackageJsonPerson)
 import Pathy as Pathy
-import Prelude (Unit, bind, discard, join, map, pure, unit, void, (+))
+import Prelude (Unit, bind, discard, pure, unit, void, (+), (<>))
 import Process as Process
 import Simple.JSON as SimpleJSON
 
 type PackageJson =
-  { author :: Maybe Foreign
+  { author :: Maybe PackageJsonPerson
   , bin :: Maybe String
   , bugs :: { url :: String }
   , description :: String
@@ -201,11 +197,6 @@ initPackageJson files = do
     jsonText =
       SimpleJSON.writeJSON
         (packageJsonRecord
-          { author = do
-              authorForeign <- packageJsonRecord.author
-              authorString <- SimpleJSON.read_ authorForeign :: Maybe String
-              authorRecord <- toAuthorRecord authorString
-              pure (SimpleJSON.write authorRecord)
           , bin = Just packageJsonRecord.name
           , files = Just ["bin"]
           , scripts =
@@ -228,16 +219,6 @@ initSpagoDhall = do
   exec "npm" ["run", "spago", "--", "init"]
   exec "npm" ["run", "spago", "--", "install", "psci-support", "test-unit"]
   pure unit
-
-toAuthorRecord :: String -> Maybe { email :: String, name :: String, url :: String }
-toAuthorRecord s = do
-  regex <-
-    hush (Regex.regex "^(.+)\\s+<(.+?)>\\s+\\((.+?)\\)$" RegexFlags.noFlags)
-  matches <- map NonEmptyArray.toArray (Regex.match regex s)
-  name <- join (Array.index matches 1)
-  email <- join (Array.index matches 2)
-  url <- join (Array.index matches 3)
-  pure { email, name, url }
 
 main :: Effect Unit
 main = Aff.launchAff_ do
