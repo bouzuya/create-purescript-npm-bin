@@ -1,15 +1,16 @@
 module Person
   ( Person
   , fromString
+  , toString
   ) where
 
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either as Either
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, maybe)
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as RegexFlags
-import Prelude (bind, map, pure)
+import Prelude (bind, map, pure, (<>))
 
 type Person =
   { name :: String
@@ -30,3 +31,9 @@ fromString s = do
   emailMaybe <- Array.index matches 2
   urlMaybe <- Array.index matches 3
   pure { email: emailMaybe, name, url: urlMaybe }
+
+toString :: Person -> String
+toString { email, name, url } =
+  name <> (f "<" email ">") <> (f "(" url ")")
+  where
+    f o m c = maybe "" (\v -> " " <> o <> v <> c) m
