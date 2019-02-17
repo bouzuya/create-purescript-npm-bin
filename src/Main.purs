@@ -197,7 +197,7 @@ initPackageJson files = do
     jsonText =
       SimpleJSON.writeJSON
         (packageJsonRecord
-          , bin = Just packageJsonRecord.name
+          { bin = Just ("bin/" <> packageJsonRecord.name)
           , files = Just ["bin"]
           , scripts =
               SimpleJSON.write
