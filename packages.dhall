@@ -109,28 +109,29 @@ let additions =
 -}
 
 let mkPackage =
-      https://raw.githubusercontent.com/spacchetti/spacchetti/20190131/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
+      https://raw.githubusercontent.com/spacchetti/spacchetti/0.12.2-20190221/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
 
 let upstream =
-      https://raw.githubusercontent.com/spacchetti/spacchetti/20190131/src/packages.dhall sha256:f6caac8189158d4d7305d5666553f307eeec3c281c002cb602a4e207e4bad939
+      https://raw.githubusercontent.com/spacchetti/spacchetti/0.12.2-20190221/src/packages.dhall sha256:17410a9b306ed2b62e940fa71ecb567a4a8a9bbce4188f148b1fc9cb23bdafe2
 
 let overrides = {=}
 
-let additions = {=} //
-  { pathy =
-      mkPackage
-        [ "console"
-        , "exceptions"
-        , "lists"
-        , "partial"
-        , "profunctor"
-        , "strings"
-        , "transformers"
-        , "typelevel-prelude"
-        , "unsafe-coerce"
-        ]
-        "https://github.com/slamdata/purescript-pathy.git"
-        "v6.0.0"
-  }
+let additions =
+        {=}
+      ⫽ { pathy =
+            mkPackage
+            [ "console"
+            , "exceptions"
+            , "lists"
+            , "partial"
+            , "profunctor"
+            , "strings"
+            , "transformers"
+            , "typelevel-prelude"
+            , "unsafe-coerce"
+            ]
+            "https://github.com/slamdata/purescript-pathy.git"
+            "v6.0.0"
+        }
 
 in  upstream ⫽ overrides ⫽ additions
