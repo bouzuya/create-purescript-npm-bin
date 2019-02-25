@@ -114,6 +114,9 @@ let mkPackage =
 let upstream =
       https://raw.githubusercontent.com/spacchetti/spacchetti/0.12.2-20190221/src/packages.dhall sha256:17410a9b306ed2b62e940fa71ecb567a4a8a9bbce4188f148b1fc9cb23bdafe2
 
+let bouzuya =
+      https://raw.githubusercontent.com/bouzuya/purescript-bouzuya-packages/20190224/bouzuya.dhall sha256:da986e65dc5065e337d1e949faca18af5b405e8d539c2d7ba17d55d1eba9625a
+
 let overrides = {=}
 
 let additions =
@@ -133,5 +136,6 @@ let additions =
             "https://github.com/slamdata/purescript-pathy.git"
             "v6.0.0"
         }
+      ⫽ bouzuya
 
 in  upstream ⫽ overrides ⫽ additions
