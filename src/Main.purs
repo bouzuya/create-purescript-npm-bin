@@ -2,14 +2,11 @@ module Main
   ( main
   ) where
 
-import Bouzuya.CommandLineOption as CommandLineOption
 import Data.Either as Either
 import Data.Foldable as Foldable
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
-import Data.String.NonEmpty as NonEmptyString
 import Data.Symbol (SProxy(..))
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff as Aff
@@ -19,9 +16,11 @@ import Effect.Exception (throw)
 import FS as FS
 import Foreign (Foreign)
 import Node.ChildProcess as ChildProcess
+import Options (Options)
+import Options as Options
 import PackageJsonPerson (PackageJsonPerson)
 import Pathy as Pathy
-import Prelude (Unit, bind, discard, pure, unit, void, (+), (<>))
+import Prelude (Unit, bind, discard, pure, unit, void, (+), (<<<), (<>))
 import Process as Process
 import Simple.JSON as SimpleJSON
 
@@ -190,7 +189,7 @@ initPackageJson files name = do
   packageJsonText <- FS.readTextFile files.packageJson
   packageJsonRecord <-
     liftEffect
-      (maybe
+      (Maybe.maybe
         (throw "invalid package.json")
         pure
         (SimpleJSON.readJSON_ packageJsonText :: Maybe PackageJson))
@@ -221,47 +220,27 @@ initSpagoDhall = do
   exec "npm" ["run", "spago", "--", "install", "psci-support", "test-unit"]
   pure unit
 
-defs ::
-  { help :: CommandLineOption.OptionDefinition Boolean
-  , name :: CommandLineOption.OptionDefinition String
-  }
-defs =
-  { help: CommandLineOption.booleanOption "help" Nothing "show help"
-  , name:
-      CommandLineOption.stringOption
-        "name" Nothing "<NAME>" "project (bin) name (`bin/NAME`)" "my-project"
-  }
-
 main :: Effect Unit
 main = Aff.launchAff_ do
   args <- liftEffect Process.args
-  { options } <-
-    maybe
-      (liftEffect (throw "invalid option"))
-      pure
-      (Either.hush (CommandLineOption.parse defs args))
+  options <- Either.either (liftEffect <<< throw) pure (Options.parse args)
   if options.help
-    then do
-      Console.log
-        (Foldable.intercalate
-          "\n"
-          [ "Usage: purescript-npm-bin [options...]"
-          , ""
-          , "Options:"
-          , ""
-          , "  --help        show help"
-          , "  --name <NAME> project (bin) name (`bin/NAME`)"
-          , ""
-          ])
-    else do
-      dirs <- liftEffect getDirs
-      files <- pure (getFiles dirs options.name)
-      addHowToBuildToReadme files
-      addLicense files
-      addLicenseToReadme files
-      addAuthorToReadme files
-      addBin dirs files
-      initPackageJson files options.name
-      initSpagoDhall
-      addGitIgnore files
-      addTravisYml files
+    then liftEffect showUsage
+    else init options
+
+init :: Options -> Aff Unit
+init options = do
+  dirs <- liftEffect getDirs
+  files <- pure (getFiles dirs options.name)
+  addHowToBuildToReadme files
+  addLicense files
+  addLicenseToReadme files
+  addAuthorToReadme files
+  addBin dirs files
+  initPackageJson files options.name
+  initSpagoDhall
+  addGitIgnore files
+  addTravisYml files
+
+showUsage :: Effect Unit
+showUsage = Console.log Options.usage
