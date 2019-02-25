@@ -2,8 +2,11 @@ module Main
   ( main
   ) where
 
+import Bouzuya.CommandLineOption as CommandLineOption
+import Data.Either as Either
 import Data.Foldable as Foldable
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe as Maybe
 import Data.String.NonEmpty as NonEmptyString
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
@@ -150,28 +153,26 @@ exec file args =
     (liftEffect
       (ChildProcess.execFileSync file args ChildProcess.defaultExecSyncOptions))
 
-getFiles :: Dirs -> Files
-getFiles dirs =
-  let
-    dirToFile :: Pathy.AbsDir -> Pathy.RelFile
-    dirToFile dir = fromMaybe (Pathy.file (SProxy :: _ "dummy")) do
-      Tuple _ (Pathy.Name parent) <- Pathy.peel dir
-      Pathy.parseRelFile Pathy.posixParser (NonEmptyString.toString parent)
-  in
-    { bin: dirs.bin Pathy.</> dirToFile dirs.current
-    , gitIgnore: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
-    , gitIgnoreTemplate:
-        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
-    , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
-    , licenseTemplate:
-        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
-    , packageJson:
-        dirs.current Pathy.</> Pathy.file (SProxy :: _ "package.json")
-    , readme: dirs.current Pathy.</> Pathy.file (SProxy :: _ "README.md")
-    , travisYml: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".travis.yml")
-    , travisYmlTemplate:
-        dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_travis.yml")
-    }
+getFiles :: Dirs -> String -> Files
+getFiles dirs name =
+  { bin:
+      dirs.bin Pathy.</>
+        (Maybe.fromMaybe
+          (Pathy.file (SProxy :: _ "dummy"))
+          (Pathy.parseRelFile Pathy.posixParser name))
+  , gitIgnore: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".gitignore")
+  , gitIgnoreTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_gitignore")
+  , license: dirs.current Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
+  , licenseTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "LICENSE")
+  , packageJson:
+      dirs.current Pathy.</> Pathy.file (SProxy :: _ "package.json")
+  , readme: dirs.current Pathy.</> Pathy.file (SProxy :: _ "README.md")
+  , travisYml: dirs.current Pathy.</> Pathy.file (SProxy :: _ ".travis.yml")
+  , travisYmlTemplate:
+      dirs.templates Pathy.</> Pathy.file (SProxy :: _ "_travis.yml")
+  }
 
 getDirs :: Effect Dirs
 getDirs = do
@@ -181,8 +182,8 @@ getDirs = do
   templates <- pure (script Pathy.</> Pathy.dir (SProxy :: _ "templates"))
   pure { bin, current, script, templates }
 
-initPackageJson :: Files -> Aff Unit
-initPackageJson files = do
+initPackageJson :: Files -> String -> Aff Unit
+initPackageJson files name = do
   Console.log "initialize package.json"
   exec "npm" ["init", "--yes"]
   exec "npm" ["install", "--save-dev", "npm-run-all", "purescript", "spago"]
@@ -197,7 +198,7 @@ initPackageJson files = do
     jsonText =
       SimpleJSON.writeJSON
         (packageJsonRecord
-          { bin = Just ("bin/" <> packageJsonRecord.name)
+          { bin = Just ("bin/" <> name)
           , files = Just ["bin"]
           , scripts =
               SimpleJSON.write
@@ -220,16 +221,31 @@ initSpagoDhall = do
   exec "npm" ["run", "spago", "--", "install", "psci-support", "test-unit"]
   pure unit
 
+defs ::
+  { name :: CommandLineOption.OptionDefinition String
+  }
+defs =
+  { name:
+      CommandLineOption.stringOption
+        "name" Nothing "<NAME>" "project (bin) name (`bin/NAME`)" "my-project"
+  }
+
 main :: Effect Unit
 main = Aff.launchAff_ do
+  args <- liftEffect Process.args
+  { options } <-
+    maybe
+      (liftEffect (throw "invalid option"))
+      pure
+      (Either.hush (CommandLineOption.parse defs args))
   dirs <- liftEffect getDirs
-  files <- pure (getFiles dirs)
+  files <- pure (getFiles dirs options.name)
   addHowToBuildToReadme files
   addLicense files
   addLicenseToReadme files
   addAuthorToReadme files
   addBin dirs files
-  initPackageJson files
+  initPackageJson files options.name
   initSpagoDhall
   addGitIgnore files
   addTravisYml files
