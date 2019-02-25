@@ -222,10 +222,12 @@ initSpagoDhall = do
   pure unit
 
 defs ::
-  { name :: CommandLineOption.OptionDefinition String
+  { help :: CommandLineOption.OptionDefinition Boolean
+  , name :: CommandLineOption.OptionDefinition String
   }
 defs =
-  { name:
+  { help: CommandLineOption.booleanOption "help" Nothing "show help"
+  , name:
       CommandLineOption.stringOption
         "name" Nothing "<NAME>" "project (bin) name (`bin/NAME`)" "my-project"
   }
@@ -238,14 +240,28 @@ main = Aff.launchAff_ do
       (liftEffect (throw "invalid option"))
       pure
       (Either.hush (CommandLineOption.parse defs args))
-  dirs <- liftEffect getDirs
-  files <- pure (getFiles dirs options.name)
-  addHowToBuildToReadme files
-  addLicense files
-  addLicenseToReadme files
-  addAuthorToReadme files
-  addBin dirs files
-  initPackageJson files options.name
-  initSpagoDhall
-  addGitIgnore files
-  addTravisYml files
+  if options.help
+    then do
+      Console.log
+        (Foldable.intercalate
+          "\n"
+          [ "Usage: purescript-npm-bin [options...]"
+          , ""
+          , "Options:"
+          , ""
+          , "  --help        show help"
+          , "  --name <NAME> project (bin) name (`bin/NAME`)"
+          , ""
+          ])
+    else do
+      dirs <- liftEffect getDirs
+      files <- pure (getFiles dirs options.name)
+      addHowToBuildToReadme files
+      addLicense files
+      addLicenseToReadme files
+      addAuthorToReadme files
+      addBin dirs files
+      initPackageJson files options.name
+      initSpagoDhall
+      addGitIgnore files
+      addTravisYml files
