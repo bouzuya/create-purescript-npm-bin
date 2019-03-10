@@ -87,7 +87,7 @@ addBin dirs files = do
       Foldable.intercalate
         "\n"
         [ "#!/usr/bin/env node"
-        , "require('../').main()"
+        , "require('../').main();"
         ]
   FS.mkdir dirs.bin
   FS.writeTextFile files.bin text
