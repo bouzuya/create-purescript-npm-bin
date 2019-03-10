@@ -217,7 +217,13 @@ initSpagoDhall :: Aff Unit
 initSpagoDhall = do
   Console.log "initialize spago.dhall"
   exec "npm" ["run", "spago", "--", "init"]
-  exec "npm" ["run", "spago", "--", "install", "psci-support", "test-unit"]
+  let
+    dependencies =
+      [ "node-process"
+      , "psci-support"
+      , "test-unit"
+      ]
+  exec "npm" (["run", "spago", "--", "install"] <> dependencies)
   pure unit
 
 main :: Effect Unit
