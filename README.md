@@ -14,6 +14,6 @@ An npm initializer for creating packages for npx with PureScript.
 # hub create
 # git push origin master
 
-npm init @bouzuya/purescript-npm-bin
-# or `npx @bouzuya/create-purescript-npm-bin`
+npm init @bouzuya/purescript-npm-bin --name bin-name
+# or `npx @bouzuya/create-purescript-npm-bin --name bin-name`
 ```
