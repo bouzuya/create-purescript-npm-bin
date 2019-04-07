@@ -185,7 +185,7 @@ initPackageJson :: Files -> String -> Aff Unit
 initPackageJson files name = do
   Console.log "initialize package.json"
   exec "npm" ["init", "--yes"]
-  exec "npm" ["install", "--save-dev", "npm-run-all", "purescript", "spago"]
+  exec "npm" ["install", "--save-dev", "purescript", "spago"]
   packageJsonText <- FS.readTextFile files.packageJson
   packageJsonRecord <-
     liftEffect
@@ -201,10 +201,9 @@ initPackageJson files name = do
           , files = Just ["bin"]
           , scripts =
               SimpleJSON.write
-              { build: "spago build"
-              , bundle: "spago make-module"
-              , docs: "spago sources | xargs purs docs --format html 'src/**/*.purs'"
-              , prepare: "npm-run-all -s build bundle"
+              { build: "spago make-module"
+              , docs: "spago docs"
+              , prepare: "npm run build"
               , purs: "purs"
               , repl: "spago repl"
               , spago: "spago"
